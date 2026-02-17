@@ -39,43 +39,38 @@ pipeline {
     }
 
     
-      stage("Terraform: fmt + init + validate + plan") {
-  when {
-    anyOf {
-      expression { params.ACTION == 'check' }
-      expression { params.ACTION == 'apply' }
-    }
-  }
+    stage("Terraform: fmt + init + validate + plan") {
   steps {
     sh '''
       set -e
 
       echo "===== Terraform fmt ====="
       docker run --rm \
-        -v "$PWD":/work -w /work \
+        -v "$PWD":/work -w /work/terraform \
         hashicorp/terraform:1.6 \
         fmt -check -recursive
 
       echo "===== Terraform init ====="
       docker run --rm \
-        -v "$PWD":/work -w /work \
+        -v "$PWD":/work -w /work/terraform \
         hashicorp/terraform:1.6 \
         init -input=false
 
       echo "===== Terraform validate ====="
       docker run --rm \
-        -v "$PWD":/work -w /work \
+        -v "$PWD":/work -w /work/terraform \
         hashicorp/terraform:1.6 \
         validate
 
       echo "===== Terraform plan ====="
       docker run --rm \
-        -v "$PWD":/work -w /work \
+        -v "$PWD":/work -w /work/terraform \
         hashicorp/terraform:1.6 \
         plan -input=false -out=tfplan
     '''
   }
 }
+
 
     stage("Terraform: apply") {
       when {
