@@ -17,7 +17,7 @@
           - lsb-release
         state: present
 
-    - name: Install Docker (simple ubuntu repo version)
+    - name: Install Docker (ubuntu repo version)
       apt:
         name: docker.io
         state: present
@@ -34,18 +34,32 @@
         groups: docker
         append: yes
 
+    # Needed for community.docker modules on the remote host
+    - name: Install Python Docker SDK (docker module dependency)
+      apt:
+        name: python3-docker
+        state: present
+
+    - name: Pull nginx image
+      community.docker.docker_image:
+        name: nginx
+        tag: latest
+        source: pull
+
     - name: Run nginx container
       community.docker.docker_container:
         name: nginx
         image: nginx:latest
         state: started
+        restart_policy: always
         ports:
           - "80:80"
+
     - name: Create Jenkins volume
-      docker_volume:
+      community.docker.docker_volume:
         name: jenkins_home
 
-    - name: Run Jenkins container
+    - name: Run Jenkins container (with Docker socket)
       community.docker.docker_container:
         name: jenkins
         image: jenkins/jenkins:lts
@@ -56,3 +70,4 @@
           - "50000:50000"
         volumes:
           - jenkins_home:/var/jenkins_home
+          - /var/run/docker.sock:/var/run/docker.sock
