@@ -44,32 +44,41 @@ pipeline {
     sh '''
       set -e
 
+      # Host path for the Jenkins workspace (because docker.sock uses the HOST docker)
+      JENKINS_VOL="/var/lib/docker/volumes/jenkins_home/_data"
+      HOST_WS="$JENKINS_VOL/workspace/$JOB_NAME"
+
+      echo "Host workspace: $HOST_WS"
+      echo "Terraform files:"
+      ls -la "$HOST_WS/terraform"
+
       echo "===== Terraform fmt ====="
       docker run --rm \
-        -v "$PWD":/work -w /work/terraform \
+        -v "$HOST_WS":/work -w /work/terraform \
         hashicorp/terraform:1.6 \
         fmt -check -recursive
 
       echo "===== Terraform init ====="
       docker run --rm \
-        -v "$PWD":/work -w /work/terraform \
+        -v "$HOST_WS":/work -w /work/terraform \
         hashicorp/terraform:1.6 \
         init -input=false
 
       echo "===== Terraform validate ====="
       docker run --rm \
-        -v "$PWD":/work -w /work/terraform \
+        -v "$HOST_WS":/work -w /work/terraform \
         hashicorp/terraform:1.6 \
         validate
 
       echo "===== Terraform plan ====="
       docker run --rm \
-        -v "$PWD":/work -w /work/terraform \
+        -v "$HOST_WS":/work -w /work/terraform \
         hashicorp/terraform:1.6 \
         plan -input=false -out=tfplan
     '''
   }
 }
+
 
 
     stage("Terraform: apply") {
