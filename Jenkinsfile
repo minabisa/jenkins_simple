@@ -40,44 +40,47 @@ pipeline {
 
     
     stage("Terraform: fmt + init + validate + plan") {
-  steps {
-    sh '''
-      set -e
+      steps {
+        sh '''
+          set -e
 
-      # Host path for the Jenkins workspace (because docker.sock uses the HOST docker)
-      JENKINS_VOL="/var/lib/docker/volumes/jenkins_home/_data"
-      HOST_WS="$JENKINS_VOL/workspace/$JOB_NAME"
+          echo "Internal Workspace: ${WORKSPACE}"
+          
+          # 1. Check files using the internal path first
+          echo "Checking for terraform directory..."
+          ls -la "${WORKSPACE}/${TF_DIR}"
 
-      echo "Host workspace: $HOST_WS"
-      echo "Terraform files:"
-      ls -la "$HOST_WS/terraform"
+          # 2. Run Terraform via Docker
+          # Note: We use ${WORKSPACE} because the Host Docker 
+          # sees the volume mount at the same location if configured correctly,
+          # or we use the Jenkins path if it's a bind mount.
+          
+          echo "===== Terraform fmt ====="
+          docker run --rm \
+            -v "${WORKSPACE}":/work -w /work/${TF_DIR} \
+            hashicorp/terraform:1.6 \
+            fmt -check -recursive
 
-      echo "===== Terraform fmt ====="
-      docker run --rm \
-        -v "$HOST_WS":/work -w /work/terraform \
-        hashicorp/terraform:1.6 \
-        fmt -check -recursive
+          echo "===== Terraform init ====="
+          docker run --rm \
+            -v "${WORKSPACE}":/work -w /work/${TF_DIR} \
+            hashicorp/terraform:1.6 \
+            init -input=false
 
-      echo "===== Terraform init ====="
-      docker run --rm \
-        -v "$HOST_WS":/work -w /work/terraform \
-        hashicorp/terraform:1.6 \
-        init -input=false
+          echo "===== Terraform validate ====="
+          docker run --rm \
+            -v "${WORKSPACE}":/work -w /work/${TF_DIR} \
+            hashicorp/terraform:1.6 \
+            validate
 
-      echo "===== Terraform validate ====="
-      docker run --rm \
-        -v "$HOST_WS":/work -w /work/terraform \
-        hashicorp/terraform:1.6 \
-        validate
-
-      echo "===== Terraform plan ====="
-      docker run --rm \
-        -v "$HOST_WS":/work -w /work/terraform \
-        hashicorp/terraform:1.6 \
-        plan -input=false -out=tfplan
-    '''
-  }
-}
+          echo "===== Terraform plan ====="
+          docker run --rm \
+            -v "${WORKSPACE}":/work -w /work/${TF_DIR} \
+            hashicorp/terraform:1.6 \
+            plan -input=false -out=tfplan
+        '''
+      }
+    }
 
 
 
