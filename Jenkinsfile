@@ -93,12 +93,13 @@ pipeline {
         input message: "Apply Terraform to AWS?", ok: "Apply Now"
 
         sh '''
-          set -e
-          docker run --rm \
-            -v ${HOST_WORKSPACE}:/work \ -w /work/${TF_DIR} \
-            hashicorp/terraform:1.6 \
-            apply -input=false -auto-approve tfplan
-        '''
+    set -e
+    docker run --rm \
+        -v "${HOST_WORKSPACE}":/work \
+        -w /work/"${TF_DIR}" \
+        hashicorp/terraform:1.6 \
+        apply -input=false -auto-approve tfplan
+   '''
       }
     }
 
