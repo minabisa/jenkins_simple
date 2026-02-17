@@ -18,6 +18,7 @@ pipeline {
     ANS_DIR = "ansible"
     INVENTORY = "inventory.ini"
     PLAYBOOK  = "install_docker.yml"
+    HOST_WORKSPACE = "/var/lib/docker/volumes/jenkins_home/_data/workspace/${JOB_NAME}"
   }
 
   stages {
@@ -94,7 +95,7 @@ pipeline {
         sh '''
           set -e
           docker run --rm \
-            -v "$PWD":/work -w /work/${TF_DIR} \
+            -v ${HOST_WORKSPACE}:/work \ -w /work/${TF_DIR} \
             hashicorp/terraform:1.6 \
             apply -input=false -auto-approve tfplan
         '''
